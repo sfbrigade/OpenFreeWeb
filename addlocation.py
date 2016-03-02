@@ -12,11 +12,14 @@ import json
 from urllib2 import Request, urlopen, URLError
 import arrow
 import os
+import yaml
 
 
 app = flask.Flask(__name__)
 
 app.secret_key = "bacon"
+
+config = yaml.load(file('settings.yaml', 'r')) 
 
 #Dictionary that maps secondary unit names to their abbreviations
 sec_unit_abbrevs = {
@@ -45,7 +48,7 @@ sec_unit_abbrevs = {
     }
 
 apikey = os.environ.get('CARTO_DB_API_KEY')
-url = 'http://localfreeweb.cartodb.com/api/v2/sql'
+url = config['cartodb_url'] + config['api_path']
 
 class View(flask.views.MethodView):
     
@@ -90,13 +93,13 @@ class View(flask.views.MethodView):
         training_types = 'NONE'
         #Creates JSON object that includes all relevant location data about
         #address provided
-        address = Geocoder.geocode(street_address + ", San Francisco, CA")
+        address = Geocoder.geocode(street_address + ", " + config['local_city_state'])
         if address.valid_address and bizname != '':      
             insert = build_sql_insert(address, line_two, bizname, hrs,
                                       org_type, phone, training_types, website)
             make_request(insert)
             result = "New location added to: "
-            result += "https://localfreeweb.cartodb.com/tables/freeweb"
+            result += config['cartodb_url'] + config['table_path']
         else:
             result = "Invalid Address"
         flask.flash(result)
